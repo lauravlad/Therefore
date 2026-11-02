@@ -1078,7 +1078,7 @@ function makeDerivationModule(cfg){
     const msg = e.msg ? `<div class="fb ${e.msg.ok?'good':'bad'}">${e.msg.ok?'':'<strong>That line doesn’t check out.</strong>'}${esc(sym(e.msg.text))}</div>` : '';
     const prev = d.id>0 ? `<button class="btn ghost" data-der="${d.id-1}">‹ Previous</button>` : '<span></span>';
     const next = d.id<EXS.length-1 ? `<button class="btn" data-der="${d.id+1}">Next exercise ›</button>` : '';
-    const input = e.done ? `<div class="fb good"><strong>Proof complete.</strong>Every line checks out, and ${esc(show(concl))} is on the outermost level.</div>` : `
+    const input = e.done ? `${confetti()}<div class="fb good"><strong>Proof complete!</strong>Every line checks out, and ${esc(show(concl))} is on the outermost level.</div>` : `
       <label class="field-label" for="der-s">Sentence</label>
       <input id="der-s" class="sym-input" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(e.sent)}">
       ${symKeys('der-s', cfg.ql)}

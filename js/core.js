@@ -16,9 +16,15 @@ function load(){ try{ const p=JSON.parse(localStorage.getItem(KEY)); return p&&t
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(progress)); }catch(e){} }
 const progress = load();
 function score(kind){ return progress[kind] || (progress[kind]={done:0,right:0}); }
-function tally(kind, ok){ const s=score(kind); s.done++; if(ok) s.right++; save(); }
+function tally(kind, ok){
+  const s=score(kind); s.done++; if(ok) s.right++;
+  progress.streak = ok ? (progress.streak||0)+1 : 0;
+  save();
+  const n=progress.streak;
+  if(ok && (n===3 || (n>=5 && n%5===0))) toast(`${n} in a row!`, true);
+}
 function getSetting(name, dflt){ const s=progress.settings||{}; return name in s ? s[name] : dflt; }
-function setSetting(name, value){ (progress.settings||(progress.settings={}))[name]=value; save(); if(name==='notation') applyNotation(); }
+function setSetting(name, value){ (progress.settings||(progress.settings={}))[name]=value; save(); if(name==='notation') applyNotation(); if(name==='look') applyLook(); }
 
 // ===== Notation (Settings page). Everything displays connectives through SYMBOLS. =====
 // Text written in the default Logic Book symbols (rule names like "⊃E", definitions) goes through sym().
@@ -31,6 +37,39 @@ const SYMBOLS = {};
 function applyNotation(){ const n=NOTATIONS[getSetting('notation','logicbook')]||NOTATIONS.logicbook; ['not','and','or','cond','bicond'].forEach(k=>SYMBOLS[k]=n[k]); }
 applyNotation();
 const sym = s => String(s).replace(/[~&⊃≡]/g, c=>({'~':SYMBOLS.not,'&':SYMBOLS.and,'⊃':SYMBOLS.cond,'≡':SYMBOLS.bicond})[c]);
+
+// ===== Look (Settings page): "playful" pastels by default, or "classic" =====
+const LOOK_PAPER = {playful:['#FFF8F2','#1E1A2B'], classic:['#F5F6FA','#11132A']};
+function applyLook(){
+  if(typeof document==='undefined' || !document.documentElement || !document.querySelectorAll) return;
+  const look=getSetting('look','playful');
+  document.documentElement.dataset.look=look;
+  const [light,dark]=LOOK_PAPER[look]||LOOK_PAPER.playful;
+  document.querySelectorAll('meta[name="theme-color"]').forEach(m=>m.setAttribute('content', /dark/.test(m.media)?dark:light));
+}
+applyLook();
+
+// ===== Little celebrations =====
+// A burst of confetti (hidden when the device asks for reduced motion).
+function confetti(){
+  const colors=['#FFB38A','#B79CFF','#7FDCB4','#8FC7FF','#FFD66B'];
+  let spans='';
+  for(let i=0;i<18;i++){
+    const ang=(i/18)*Math.PI*2, dist=60+((i*37)%50);
+    spans+=`<span style="--x:${Math.round(Math.cos(ang)*dist*1.6)}px;--y:${Math.round(Math.sin(ang)*dist-40)}px;--r:${(i*47)%360}deg;--c:${colors[i%colors.length]};--d:${(i%5)*40}ms"></span>`;
+  }
+  return `<div class="confetti" aria-hidden="true">${spans}</div>`;
+}
+// A short message at the bottom of the screen, outside the re-rendered app area.
+let toastTimer=null;
+function toast(msg, party){
+  if(typeof document==='undefined' || !document.createElement || !document.body) return;
+  let el=document.getElementById('toast');
+  if(!el){ el=document.createElement('div'); el.id='toast'; el.setAttribute('role','status'); el.setAttribute('aria-live','polite'); document.body.appendChild(el); }
+  el.innerHTML=`${party?confetti():''}<span class="toast-msg">${esc(msg)}</span>`;
+  el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.remove('show'), 2400);
+}
 
 // Building blocks one level shares with later ones (Level 2's parser and proof checker are reused by Levels 3 and 4).
 const Shared = {};
@@ -77,7 +116,7 @@ window.addEventListener('hashchange', ()=>{ const h=location.hash.slice(1)||'hom
 
 // ===== Home =====
 function homeView(){
-  const icon = App.heroIcon ? App.heroIcon() : '';
+  const icon = getSetting('look','playful')==='playful' ? '<img class="hero-icon" src="icons/icon.svg" alt="" width="84" height="84">' : (App.heroIcon ? App.heroIcon() : '');
   const topic = t => t.go
     ? `<li><button class="topic open" data-go="${t.go}"><span>${t.title}<small>${t.sub}</small></span><span class="go">${t.action||'Start'}</span></button></li>`
     : `<li><button class="topic" disabled><span>${t.title}<small>${t.sub}</small></span><span class="pill">Coming soon</span></button></li>`;
@@ -98,6 +137,9 @@ function settingsView(){
       <b>${n.label}</b><small class="sent">${n.not} ${n.and} ${n.or} ${n.cond} ${n.bicond}  ·  ${n.not}(A ${n.and} B) ${n.cond} (C ${n.or} D)</small></button>`;
   return `<button class="back" data-go="home">‹ All levels</button>
   <h2>Settings</h2>
+  <h3 class="section-title">Look</h3>
+  ${seg('look','Style',[['playful','Playful'],['classic','Classic']], getSetting('look','playful'))}
+  <p class="muted" style="font-size:.92rem">Playful uses soft pastels and celebrates your streaks. Classic is calmer. Both follow your phone’s light or dark mode.</p>
   <h3 class="section-title">Notation</h3>
   <p class="muted">How connectives are shown everywhere in the app. Whichever you pick, you can type answers in any of these styles, or use keyboard forms: <b class="kbd">-</b> for not, <b class="kbd">&amp;</b> for and, <b class="kbd">v</b> for or, <b class="kbd">-&gt;</b> for if…then, <b class="kbd">&lt;-&gt;</b> for if and only if.</p>
   <div class="choices one" style="margin-top:10px">${Object.entries(NOTATIONS).map(opt).join('')}</div>

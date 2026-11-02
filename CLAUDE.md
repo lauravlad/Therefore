@@ -41,7 +41,8 @@ A free logic practice web app, hosted on GitHub Pages from `index.html`. It's a 
 
 ```
 index.html              page shell; loads the CSS, then core.js, then each level file in order
-css/style.css           all styles; light and dark palettes are CSS custom properties
+css/style.css           all styles; palettes are CSS custom properties: Playful (default) and Classic looks, each light and dark
+icons/, manifest.webmanifest   home-screen icon (icon.svg is the source; PNGs are 180/192/512, opaque) and full-screen app settings
 js/core.js              helpers, saved progress and settings, notation (SYMBOLS, sym), registry,
                         hash routing, delegated events, keyDefs()/seg(), home, Settings, Credits
 js/levelN-*.js          one file per level, each wrapped in an IIFE so its names stay private
@@ -54,4 +55,5 @@ tests/run.js            loads the app files into a sandbox and runs tests/*.test
 
 ## Style
 
+- The default look is Playful (pastels, rounded cards, a checkmark on correct answers, confetti for finished proofs, streak messages at 3 in a row and every 5 after that). Classic is the alternative in Settings. Animations must respect `prefers-reduced-motion`.
 - The UI must work at phone width and in both light and dark themes. Use the CSS variables; don't hard-code colors.
